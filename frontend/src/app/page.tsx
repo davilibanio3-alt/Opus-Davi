@@ -10,6 +10,7 @@ import { WalletView } from "@/components/Wallet";
 import { SendView } from "@/components/Send";
 import { RecoveryView } from "@/components/Recovery";
 import { MiningView } from "@/components/Mining";
+import { PoolView } from "@/components/Pool";
 
 export default function Page() {
   const [tab, setTab] = useState("dashboard");
@@ -32,6 +33,7 @@ export default function Page() {
         {tab === "send" && <SendView />}
         {tab === "recovery" && <RecoveryView />}
         {tab === "mining" && <MiningView />}
+        {tab === "pool" && <PoolView />}
       </main>
       <footer className="mx-auto max-w-7xl px-4 py-10 text-center text-xs text-muted">
         Opus Davi · Bitcoin Mainnet platform · Self-custody · No third-party custody, ever

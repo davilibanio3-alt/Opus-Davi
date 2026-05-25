@@ -22,12 +22,16 @@ jobs:
           npm run build -w recovery
           npm run build -w mining
           npm run build -w ai-engine
+          npm run build -w pool
+          npm run build -w miner
       - name: Typecheck libs
         run: |
           npm run typecheck -w tx-engine
           npm run typecheck -w recovery
           npm run typecheck -w mining
           npm run typecheck -w ai-engine
+          npm run typecheck -w pool
+          npm run typecheck -w miner
       - name: Typecheck backend
         run: npm run typecheck -w backend
       - name: Build backend
