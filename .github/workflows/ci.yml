@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  typecheck-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - name: Install workspace deps
+        run: npm install --workspaces --include-workspace-root
+      - name: Typecheck libs
+        run: |
+          npm run typecheck -w tx-engine
+          npm run typecheck -w recovery
+          npm run typecheck -w mining
+          npm run typecheck -w ai-engine
+      - name: Build libs
+        run: |
+          npm run build -w tx-engine
+          npm run build -w recovery
+          npm run build -w mining
+          npm run build -w ai-engine
+      - name: Typecheck backend
+        run: npm run typecheck -w backend
+      - name: Build backend
+        run: npm run build -w backend
+      - name: Typecheck frontend
+        run: npm run typecheck -w frontend
+      - name: Build frontend
+        env:
+          NEXT_PUBLIC_MEMPOOL_API: "https://mempool.space/api"
+          NEXT_PUBLIC_MEMPOOL_WS: "wss://mempool.space/api/v1/ws"
+          NEXT_PUBLIC_NETWORK: "mainnet"
+        run: npm run build -w frontend
+      - name: Lint frontend
+        run: npm run lint -w frontend

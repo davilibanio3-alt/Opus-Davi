@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background: #0a0d12;
+  color: #e6e9ef;
+  min-height: 100vh;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(247, 147, 26, 0.35);
+}
+
+/* Subtle grid backdrop */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(247, 147, 26, 0.10), transparent),
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: auto, 40px 40px, 40px 40px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.card {
+  @apply rounded-2xl border border-border bg-panel/80 backdrop-blur-sm;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-panel2 px-4 py-2 text-sm font-medium hover:border-accent hover:text-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-black hover:bg-accent2 transition-colors disabled:opacity-50;
+}
+
+.input {
+  @apply w-full rounded-lg border border-border bg-panel2 px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent placeholder:text-muted;
+}
+
+.stat-label {
+  @apply text-[11px] uppercase tracking-wider text-muted;
+}
+
+.stat-value {
+  @apply text-xl font-semibold tabular-nums;
+}
+
+.tab {
+  @apply px-4 py-2 text-sm border-b-2 border-transparent text-muted hover:text-text cursor-pointer;
+}
+
+.tab.active {
+  @apply border-accent text-text;
+}
+
+/* mempool depth bar */
+.depth-block {
+  background: linear-gradient(180deg, rgba(247, 147, 26, 0.85), rgba(247, 147, 26, 0.35));
+}
