@@ -29,6 +29,7 @@ export const config = {
     user: process.env.STRATUM_USER || "",
     password: process.env.STRATUM_PASSWORD || "x",
   },
+  poolStatsUrl: process.env.POOL_STATS_URL || "",
 };
 
 export type AppConfig = typeof config;

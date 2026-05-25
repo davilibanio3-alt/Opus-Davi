@@ -19,6 +19,9 @@ signatures are local, no third-party custody, no fake hashrate, no fake
 | [`recovery/`](./recovery) | Authorized HD recovery — scans **your own** xpub / mnemonic for forgotten UTXOs with BIP44 gap-limit semantics. |
 | [`mining/`](./mining) | Stratum V1 client (real TCP) + Braiins/F2Pool/ViaBTC REST adapters. |
 | [`ai-engine/`](./ai-engine) | Statistical analytics — fee prediction from mempool depth, whale detection, address risk scoring. No LLM, no fluff. |
+| [`node/`](./node) | **Phase 2** — containerized Bitcoin Core Mainnet full node (RPC + ZMQ). |
+| [`pool/`](./pool) | **Phase 2** — real Stratum V1 pool server in TypeScript. Talks to bitcoind via JSON-RPC, builds block candidates, validates SHA-256d shares, ships found blocks via `submitblock`. |
+| [`miner/`](./miner) | **Phase 2** — real CPU SHA-256d miner client. Worker_threads, Stratum V1, submits cryptographically valid shares. |
 
 ## What you can do (real, on Mainnet)
 
@@ -36,6 +39,12 @@ signatures are local, no third-party custody, no fake hashrate, no fake
   legacy / nested segwit / native segwit / taproot derivation paths.
 - **Mine** — connect a real ASIC's Stratum endpoint via the backend, or pull
   real worker / hashrate / payout stats from Braiins / F2Pool / ViaBTC.
+- **Run your own pool** (Phase 2) — a real Bitcoin Mainnet full node + a real
+  Stratum V1 pool server you can point real ASICs (or this repo's CPU miner)
+  at. The dashboard shows real connected workers, real validated shares, and
+  real block candidates pulled live from `getblocktemplate`. See
+  [`docs/pool-architecture.md`](./docs/pool-architecture.md) and
+  [`docs/deploy.md`](./docs/deploy.md).
 
 ## What it does NOT do (and why)
 
@@ -69,14 +78,52 @@ npm run dev -w frontend
 # -> http://localhost:3000
 ```
 
-## Quick start (Docker)
+## Quick start (Docker — full stack with self-hosted pool)
 
 ```bash
 cp .env.example .env
-docker-compose up --build
-# frontend → http://localhost:3000
-# backend  → http://localhost:8787
+# Edit .env: set BITCOIND_RPC_PASSWORD and POOL_PAYOUT_ADDRESS (a Mainnet
+# address you control — the pool will pay block rewards there).
+
+docker compose up -d --build
+# bitcoind → 8333 p2p, 8332 RPC (loopback)
+# pool     → 3333 Stratum V1, 3334 stats
+# backend  → 8787 REST + WS
+# frontend → 3000 — open http://localhost:3000 and click the Pool tab
+
+# Add a CPU miner sidecar (optional, useful to verify the loop end-to-end):
+docker compose --profile with-miner up -d miner
 ```
+
+For production hosting and IBD sizing, see [`docs/deploy.md`](./docs/deploy.md).
+
+## Honest hashrate disclosure (Phase 2)
+
+The pool & miner shipped in Phase 2 are **real Bitcoin software**, not a
+fantasy. Bitcoin Mainnet is currently at roughly **700 EH/s** of total
+network hashpower — almost all of it from purpose-built ASIC chips. To
+produce 1% of that (≈ 7 EH/s) you would need on the order of 30 000 modern
+ASICs costing tens of millions of dollars plus tens of megawatts of power.
+
+What this software actually does:
+
+| Hardware                  | Approximate real hashrate |
+| ------------------------- | ------------------------- |
+| 1 CPU core (Node crypto)  | 1–10 MH/s                 |
+| 8-core VPS                | 30–80 MH/s                |
+| 1 GPU (RTX 4090, SHA-256) | ~ 10 GH/s                 |
+| 1 Antminer S21 ASIC       | 200 TH/s                  |
+
+Finding a Mainnet block at any of those scales is statistically *implausible*.
+What you can verify is real on the Pool dashboard:
+
+- Real Stratum sessions over TCP.
+- Real SHA-256d-verified shares.
+- Real Mainnet block candidates pulled from your bitcoind.
+- Real transactions from the live mempool inside each candidate.
+
+If you ever do point enough hashrate at the pool to find a block, the entire
+coinbase reward goes to the address you set as `POOL_PAYOUT_ADDRESS`.
 
 ## Deploy
 

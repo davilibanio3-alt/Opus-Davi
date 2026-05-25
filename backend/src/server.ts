@@ -8,6 +8,7 @@ import { explorerRoutes } from "./routes/explorer";
 import { broadcastRoutes } from "./routes/broadcast";
 import { recoveryRoutes } from "./routes/recovery";
 import { miningRoutes } from "./routes/mining";
+import { poolRoutes } from "./routes/pool";
 import { wsRoutes } from "./routes/ws";
 
 async function main() {
@@ -56,6 +57,9 @@ async function main() {
       "POST /api/mining/pools/:pool",
       "POST /api/mining/stratum/connect",
       "GET  /api/mining/stratum/status",
+      "GET  /api/pool/stats",
+      "GET  /api/pool/health",
+      "WS   /api/pool/live",
       "WS   /ws",
     ],
   }));
@@ -64,6 +68,7 @@ async function main() {
   await app.register(broadcastRoutes);
   await app.register(recoveryRoutes);
   await app.register(miningRoutes);
+  await app.register(poolRoutes);
   await app.register(wsRoutes);
 
   app.setErrorHandler((err, _req, reply) => {

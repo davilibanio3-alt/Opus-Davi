@@ -124,6 +124,14 @@ export const api = {
   prices: () => get<PriceTicker>("/api/v1/prices"),
   hashrate: () => get<{ hashrates: Array<{ timestamp: number; avgHashrate: number }> }>("/api/v1/mining/hashrate/1y"),
   pools: () => get<{ pools: Array<{ poolId: number; name: string; blockCount: number; rank: number; slug: string }> }>("/api/v1/mining/pools/1w"),
+  poolStats: async (): Promise<PoolStatsBridge> => {
+    if (!BACKEND) {
+      return { connected: false, fetchedAt: 0, url: "", error: "Backend not configured" };
+    }
+    const r = await fetch(`${BACKEND}/api/pool/stats`);
+    if (!r.ok) throw new Error(`pool stats → ${r.status}`);
+    return (await r.json()) as PoolStatsBridge;
+  },
   broadcastTx: async (rawHex: string): Promise<string> => {
     const url = BACKEND ? `${BACKEND}/api/tx/broadcast` : `${MEMPOOL_API}/tx`;
     if (BACKEND) {
@@ -146,6 +154,45 @@ export const api = {
     return text;
   },
 };
+
+export interface PoolMinerStats {
+  sessionId: string;
+  worker: string | null;
+  remote: string;
+  difficulty: number;
+  sharesAccepted: number;
+  sharesRejected: number;
+  hashrate5m: number;
+  hashrate1h: number;
+  connectedAt: number;
+  lastShareAt: number;
+}
+
+export interface PoolStatsSnapshot {
+  totalHashrate5m: number;
+  totalHashrate1h: number;
+  miners: PoolMinerStats[];
+  blocksFound: Array<{ height: number; hashBE: string; foundAt: number; foundBy: string }>;
+  currentJob?: {
+    jobId: string;
+    height: number;
+    networkTargetHex: string;
+    nbitsLEHex: string;
+    txCount: number;
+    coinbaseValueSat: number;
+    createdAt: number;
+  };
+  startedAt: number;
+  now: number;
+}
+
+export interface PoolStatsBridge {
+  connected: boolean;
+  fetchedAt: number;
+  url: string;
+  snapshot?: PoolStatsSnapshot;
+  error?: string;
+}
 
 export const config = {
   MEMPOOL_API,

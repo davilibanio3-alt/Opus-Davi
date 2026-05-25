@@ -9,14 +9,18 @@
     "mining",
     "recovery",
     "tx-engine",
-    "ai-engine"
+    "ai-engine",
+    "pool",
+    "miner"
   ],
   "scripts": {
     "dev:frontend": "npm run dev -w frontend",
     "dev:backend": "npm run dev -w backend",
     "build:frontend": "npm run build -w frontend",
     "build:backend": "npm run build -w backend",
-    "build": "npm run build -w tx-engine && npm run build -w recovery && npm run build -w mining && npm run build -w ai-engine && npm run build -w backend && npm run build -w frontend",
+    "build": "npm run build -w tx-engine && npm run build -w recovery && npm run build -w mining && npm run build -w ai-engine && npm run build -w pool && npm run build -w miner && npm run build -w backend && npm run build -w frontend",
+    "dev:pool": "npm run dev -w pool",
+    "dev:miner": "npm run dev -w miner",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
   },
