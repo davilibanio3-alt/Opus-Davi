@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: btc-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8787:8787"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8787/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    container_name: btc-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:8787
+      NEXT_PUBLIC_MEMPOOL_API: https://mempool.space/api
+      NEXT_PUBLIC_MEMPOOL_WS: wss://mempool.space/api/v1/ws
+      NEXT_PUBLIC_NETWORK: mainnet
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
