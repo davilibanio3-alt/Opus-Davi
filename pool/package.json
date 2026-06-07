@@ -1,0 +1,22 @@
+{
+  "name": "@btc-platform/pool",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Real Stratum V1 mining pool server. Talks to bitcoind via JSON-RPC (getblocktemplate / submitblock), accepts miner connections over TCP, validates SHA-256d shares, and submits found blocks to the Bitcoin Mainnet network. Designed for solo mining or small-pool operation; honestly reports whatever real hashrate is actually connected.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "bitcoinjs-lib": "6.1.6"
+  },
+  "devDependencies": {
+    "@types/node": "20.12.7",
+    "tsx": "4.7.2",
+    "typescript": "5.4.5"
+  }
+}

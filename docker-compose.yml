@@ -1,6 +1,79 @@
 version: "3.9"
 
+# Opus-Davi Bitcoin Mainnet platform — full stack.
+#
+#   bitcoind  : real Bitcoin Core Mainnet full node
+#   pool      : Stratum V1 server, talks to bitcoind, accepts miner TCP conns
+#   miner     : optional CPU miner sidecar, connects to pool, submits real shares
+#   backend   : Fastify API + WebSocket; scrapes pool stats and exposes them
+#   frontend  : Next.js dashboard (Pool tab + explorer + wallet + recovery)
+#
+# Start the whole stack:
+#     docker compose up -d --build
+#
+# Skip the optional miner (e.g. you'll point a real ASIC at port 3333 instead):
+#     docker compose up -d --build bitcoind pool backend frontend
+#
+# Skip bitcoind too (if you already run one elsewhere):
+#     BITCOIND_RPC_URL=http://your-node:8332 docker compose up -d --build pool backend frontend
+
 services:
+  bitcoind:
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+    container_name: opus-davi-node
+    restart: unless-stopped
+    environment:
+      BITCOIND_RPC_USER: ${BITCOIND_RPC_USER:-opusrpc}
+      BITCOIND_RPC_PASSWORD: ${BITCOIND_RPC_PASSWORD:?set BITCOIND_RPC_PASSWORD in .env}
+    volumes:
+      - bitcoin-data:/data
+    ports:
+      - "8333:8333"   # p2p
+      - "127.0.0.1:8332:8332"  # RPC bound to localhost on the host
+    stop_grace_period: 60s
+
+  pool:
+    build:
+      context: .
+      dockerfile: docker/pool.Dockerfile
+    container_name: opus-davi-pool
+    restart: unless-stopped
+    depends_on:
+      - bitcoind
+    environment:
+      STRATUM_HOST: 0.0.0.0
+      STRATUM_PORT: 3333
+      POOL_STATS_HOST: 0.0.0.0
+      POOL_STATS_PORT: 3334
+      POOL_PAYOUT_ADDRESS: ${POOL_PAYOUT_ADDRESS:?set POOL_PAYOUT_ADDRESS to a mainnet address you control}
+      BTC_NETWORK: ${BTC_NETWORK:-main}
+      POOL_TAG: ${POOL_TAG:-opus-davi}
+      POOL_INITIAL_DIFFICULTY: ${POOL_INITIAL_DIFFICULTY:-0.001}
+      BITCOIND_RPC_URL: ${BITCOIND_RPC_URL:-http://bitcoind:8332}
+      BITCOIND_RPC_USER: ${BITCOIND_RPC_USER:-opusrpc}
+      BITCOIND_RPC_PASSWORD: ${BITCOIND_RPC_PASSWORD:?set BITCOIND_RPC_PASSWORD in .env}
+    ports:
+      - "3333:3333"   # Stratum V1
+      - "3334:3334"   # internal stats HTTP (also reachable by backend)
+
+  miner:
+    build:
+      context: .
+      dockerfile: docker/miner.Dockerfile
+    container_name: opus-davi-miner
+    restart: unless-stopped
+    depends_on:
+      - pool
+    profiles: ["with-miner"]
+    environment:
+      POOL_HOST: pool
+      POOL_PORT: 3333
+      MINER_WORKER: ${MINER_WORKER:-opus-davi.cpu}
+      MINER_PASSWORD: ${MINER_PASSWORD:-x}
+      MINER_THREADS: ${MINER_THREADS:-2}
+
   backend:
     build:
       context: .
@@ -9,6 +82,10 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      POOL_STATS_URL: ${POOL_STATS_URL:-http://pool:3334/stats}
+    depends_on:
+      - pool
     ports:
       - "8787:8787"
     healthcheck:
@@ -32,3 +109,6 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+
+volumes:
+  bitcoin-data:

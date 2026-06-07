@@ -18,6 +18,7 @@ const TABS = [
   { id: "send", label: "Send / PSBT" },
   { id: "recovery", label: "Recovery" },
   { id: "mining", label: "Mining" },
+  { id: "pool", label: "Pool" },
 ];
 
 export function Header({ tab, onTab }: Props) {
