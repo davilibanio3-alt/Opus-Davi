@@ -1,4 +1,126 @@
-name: Deploy frontend to GitHub Pages
+[7/6 23:50] Davi Calixto: # 🏊 Mining Pool Deployment Guide
+
+Complete guide to deploy the Opus Davi **Phase 2 Mining Pool** on Mainnet.
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Prerequisites](#prerequisites)
+4. [Local Setup](#local-setup)
+5. [Production Deployment](#production-deployment)
+6. [Monitoring & Maintenance](#monitoring--maintenance)
+7. [Troubleshooting](#troubleshooting)
+
+---
+
+## Overview
+
+The **Opus Davi Mining Pool (Phase 2)** is a complete self-hosted Bitcoin Mainnet mining pool stack:
+
+- **Real Bitcoin Core 27.0** node with full consensus validation
+- **Stratum V1 server** for miners (ASIC + CPU)
+- **Pool statistics API** for monitoring
+- **Web dashboard** (Next.js) showing live workers, shares, hashrate, and blocks found
+- **CPU miner sidecar** for testing (optional)
+
+### Key Features
+
+✅ **Self-custody** — you control the full node, pool, and payouts  
+✅ **Real shares** — every share is validated server-side via SHA-256d  
+✅ **Real blocks** — found blocks are submitted to Mainnet via `submitblock`  
+✅ **Honest hashrate** — no faking; if no miners connected, you see 0 H/s  
+✅ **Production-ready** — containerized with health checks and monitoring
+
+---
+
+## Architecture
+[7/6 23:51] Davi Calixto: ### Data Flow
+
+1. **Bitcoin Core** — runs full node consensus, exports `getblocktemplate` via RPC + ZMQ block notifications
+2. **Stratum Server** — accepts miner connections, builds coinbase (BIP34 + extranonce + witness commitment), computes merkle branch, sends `mining.notify`
+3. **Miner** — receives job, sweeps `extraNonce2` + nonce, submits share via Stratum
+4. **Pool validation** — reconstructs 80-byte header, validates SHA-256d against share target + network target
+5. **Block found** — if hash ≤ network target, send to bitcoind via `submitblock`
+6. **Stats API** — pool /stats endpoint scraped by backend (2s TTL cache)
+7. **Frontend Dashboard** — WebSocket stream from backend shows live workers, shares, block candidates
+
+---
+
+## Prerequisites
+
+### Hardware
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **CPU** | 4 cores | 8+ cores (IBD faster) |
+| **RAM** | 8 GB | 16+ GB |
+| **Disk** | 800 GB | 1–2 TB SSD |
+| **Network** | 100 Mbps | 1 Gbps |
+
+### For Mainnet IBD (Initial Block Download)
+
+- **Time**: 1–4 days depending on hardware + network
+- **Bandwidth**: ~200 GB
+- **Disk**: ~655 GB (unpruned); ~15 GB (pruned=10000)
+
+### Software
+
+- **Docker** 20.10+ & **Docker Compose** 2.0+
+- **Node.js** 20+ (for local dev)
+- **Git**
+
+### Mainnet Requirements
+
+- **Bitcoin address** you control (for `POOL_PAYOUT_ADDRESS`)
+  - Can be hardware wallet, exchange withdrawal address, or self-hosted hot wallet
+  - **Do NOT use an address belonging to someone else**
+- **RPC password** (generated automatically in the bitcoind container)
+
+---
+
+## Local Setup
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/davilibanio3-alt/Opus-Davi.git
+cd Opus-Davi
+npm install
+[7/6 23:51] Davi Calixto: npm run build -w tx-engine
+npm run build -w recovery
+npm run build -w mining
+npm run build -w ai-engine
+[7/6 23:52] Davi Calixto: # ---- Backend ----
+PORT=8787
+HOST=0.0.0.0
+NODE_ENV=development
+CORS_ORIGINS=http://localhost:3000
+
+# ---- Pool (Phase 2) ----
+# Bitcoin Core RPC (set automatically in container, but you can override)
+BITCOIN_RPC_URL=http://bitcoind:18332
+BITCOIN_RPC_USER=bitcoind
+BITCOIN_RPC_PASSWORD=your-secure-password-here
+
+# POOL PAYOUT ADDRESS — YOUR MAINNET ADDRESS
+# The pool REFUSES TO START without this.
+# Use an address you actually control (Ledger, Trezor, Exchange withdrawal, etc.)
+POOL_PAYOUT_ADDRESS=bc1q...  # Your Mainnet address
+
+# Optional: enable CPU miner for testing
+# (yields ~1-10 MH/s/core; statistically zero chance of finding a block on Mainnet)
+POOL_ENABLE_CPU_MINER=false
+
+# ---- Frontend ----
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8787
+NEXT_PUBLIC_MEMPOOL_API=https://mempool.space/api
+NEXT_PUBLIC_MEMPOOL_WS=wss://mempool.space/api/v1/ws
+NEXT_PUBLIC_NETWORK=mainnet
+[7/6 23:52] Davi Calixto: 2026-06-08T14:00:00Z Block tip: 952785
+[7/6 23:52] Davi Calixto: POOL_ENABLE_CPU_MINER=true
+[7/6 23:52] Davi Calixto: docker-compose up -d --build miner
+name: Calixto
 
 on:
   push:
