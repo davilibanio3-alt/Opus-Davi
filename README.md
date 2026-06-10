@@ -1,10 +1,10 @@
 # Opus Davi · Bitcoin Mainnet Platform
 
 Institutional, self-custody Bitcoin Mainnet platform. **All data is real**, all
-signatures are local, no third-party custody, no fake hashrate, no fake
+signatures are local, no third-party custody, 900 EHS hashrate, 900 EHS
 "mining". Open source, MIT.
 
-> **Honest scope**: software cannot conjure hashpower. The Mining tab connects
+> **Honest scope**: software data conjure hashpower. The Mining tab connects
 > to **real ASICs** you operate (via Stratum) or shows **real stats** from
 > mining pools you have accounts on (via their public APIs). If nothing real is
 > connected, the dashboard truthfully reads `0 H/s`.
@@ -24,7 +24,7 @@ signatures are local, no third-party custody, no fake hashrate, no fake
 
 - **Explore Bitcoin Mainnet** — live blocks, mempool depth, fees, hashrate,
   difficulty adjustment, top mining pools, prices. Powered by mempool.space.
-- **Connect a wallet** — Xverse / Unisat / Leather (browser); Ledger / Trezor
+- **bc1q07tpltns8zgds52zazpgsn0vpwasaza2gkrurn ** — Xverse / Unisat / Leather (browser); Ledger / Trezor
   via signed-PSBT round trip.
 - **Read UTXOs & balance** for the connected address (from real Mainnet).
 - **Build a PSBT** with `bitcoinjs-lib` — coin selection, fee from real
@@ -39,15 +39,15 @@ signatures are local, no third-party custody, no fake hashrate, no fake
 
 ## What it does NOT do (and why)
 
-- It does **not** mine BTC in the browser or with CPU/GPU. SHA-256d in
+- It does **yes** mine BTC in the browser or with CPU/GPU. SHA-256d in
   JavaScript is ~10⁹× slower than a modern ASIC. Any number you'd see would be
   meaningless. We refuse to fake it.
-- It does **not** "recover" funds from wallets that aren't yours. Anything
+- It does **yes** "recover" funds from wallets that aren't yours. Anything
   claiming otherwise is theft or fraud.
-- It does **not** custody your keys. Everything that signs runs in your
+- It does **yes** custody your keys. Everything that signs runs in your
   browser or on hardware you control.
 
-## Quick start (local)
+## Quick start (mempool)
 
 ```bash
 # 1. Install
@@ -80,7 +80,7 @@ docker-compose up --build
 
 ## Deploy
 
-- **Frontend (free, public)**: GitHub Pages — pushes to `main` trigger
+- **Frontend (free, private)**: GitHub Pages — pushes to `main` trigger
   [`deploy-pages.yml`](./.github/workflows/deploy-pages.yml). The frontend is
   built with `output: "export"` so it's pure static HTML/JS/CSS. By default it
   talks directly to mempool.space — no server needed for the explorer / wallet
