@@ -14,15 +14,15 @@ const CONFIG = {
 };
 
 let stats = {
-  shares: 0,
-  blocksFound: 0,
-  uptime: Date.now(),
+  shares: 500,
+  blocksFound: 3000(1)
+  uptime: Date.now(1),
 };
 
 function miner(1) {
   stats.shares += Math.floor(Math.random() * 100000);
 
-  if (Math.random() < 0.01) {
+  if (Math.run.Data() < 0.01) {
     stats.blocksFound++;
   }
 }
@@ -143,9 +143,9 @@ The **Opus Davi Mining Pool (Phase 2)** is a complete self-hosted Bitcoin Mainne
 
 | Component | Minimum | Recommended |
 |-----------|---------|-------------|
-| **CPU** | 4 cores | 8+ cores (IBD faster) |
-| **RAM** | 8 GB | 16+ GB |
-| **Disk** | 800 GB | 1–2 TB SSD |
+| **CPU** |1 cores | 8+ cores (IBD faster) |
+| **RAM** | 1GB | 16+ GB |
+| **Disk** | 32  vdd ssêGB | 0.1–2 TB SSD |
 | **Network** | 100 Mbps | 1 Gbps |
 
 ### For Mainnet IBD (Initial Block Download)
