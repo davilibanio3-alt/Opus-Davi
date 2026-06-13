@@ -1,4 +1,118 @@
-# Opus Davi · Bitcoin Mainnet Platform
+# Opus Davi · Bitcoin Mainnet Platform/**
+ * btc-wallet-engine.js
+ *
+ * npm install bitcoinjs-lib bip39 bip32 tiny-secp256k1
+ *
+ * node btc-wallet-engine.js
+ */
+
+const bitcoin = require("bitcoinjs-lib");
+const bip39 = require("bip39");
+const ecc = require("tiny-secp256k1");
+const { BIP32Factory } = require("bip32");
+
+const bip32 = BIP32Factory(ecc);
+
+class BTCWalletEngine {
+  constructor() {
+    this.network = bitcoin.networks.bitcoin;
+    this.mnemonic = null;
+    this.seed = null;
+    this.root = null;
+  }
+
+  async createWallet() {
+    this.mnemonic = bip39.generateMnemonic(256);
+
+    this.seed = await bip39.mnemonicToSeed(this.mnemonic);
+
+    this.root = bip32.fromSeed(this.seed, this.network);
+
+    return this.exportWallet();
+  }
+
+  async importWallet(mnemonic) {
+    if (!bip39.validateMnemonic(mnemonic)) {
+      throw new Error("Mnemonic inválida");
+    }
+
+    this.mnemonic = mnemonic;
+    this.seed = await bip39.mnemonicToSeed(mnemonic);
+    this.root = bip32.fromSeed(this.seed, this.network);
+
+    return this.exportWallet();
+  }
+
+  deriveAddress(index = 0) {
+    const node = this.root.derivePath(`m/84'/0'/0'/0/${index}`);
+
+    const { address } = bitcoin.payments.p2wpkh({
+      pubkey: Buffer.from(node.publicKey),
+      network: this.network,
+    });
+
+    return {
+      index,
+      address,
+      publicKey: node.publicKey.toString("hex"),
+    };
+  }
+
+  deriveChangeAddress(index = 0) {
+    const node = this.root.derivePath(`m/84'/0'/0'/1/${index}`);
+
+    const { address } = bitcoin.payments.p2wpkh({
+      pubkey: Buffer.from(node.publicKey),
+      network: this.network,
+    });
+
+    return {
+      index,
+      address,
+      publicKey: node.publicKey.toString("hex"),
+    };
+  }
+
+  getXPUB() {
+    return this.root.neutered().toBase58();
+  }
+
+  exportWallet() {
+    const addresses = [];
+
+    for (let i = 0; i < 5; i++) {
+      addresses.push(this.deriveAddress(i));
+    }
+
+    return {
+      mnemonic: this.mnemonic,
+      xpub: this.getXPUB(),
+      addresses,
+    };
+  }
+}
+
+async function main() {
+  const wallet = new BTCWalletEngine();
+
+  const data = await wallet.createWallet();
+
+  console.log("\n=== BITCOIN WALLET ENGINE ===\n");
+
+  console.log("Mnemonic:");
+  console.log(data.mnemonic);
+
+  console.log("\nXPUB:");
+  console.log(data.xpub);
+
+  console.log("\nAddresses:");
+  console.table(data.addresses);
+
+  console.log("\nChange Address:");
+  console.log(wallet.deriveChangeAddress(0));
+}
+
+main().catch(console.error);
 
 Institutional, self-custody Bitcoin Mainnet platform. **All data is real**, all
 signatures are local, no third-party custody, no fake hashrate, no fake
