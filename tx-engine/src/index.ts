@@ -41,7 +41,7 @@ export function generateAddress(
   purpose: 84 | 44 | 49 | 86 = 84
 ): string {
 
-  const node = bip32.fromBase58(xpub, NETWORK);
+  const node = bip32.BIP32.fromBase58(xpub, NETWORK);
 
   const child = node.derive(0).derive(index);
 
