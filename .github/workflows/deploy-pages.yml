@@ -1,4 +1,532 @@
-name: Deploy frontend to GitHub Pages
+/**
+ * BTC Mega Pool Real
+ * Arquivo único
+ * Uso:
+ *   node btc-mega-pool.js
+ */
+
+const http = require("http");
+
+const CONFIG = {
+  network: "bitcoin-mainnet",
+  targetHashrateEH: 900,
+  miners: 5000000,
+};
+
+let stats = {
+  shares: 500,
+  blocksFound: 3000(1)
+  uptime: Date.now(1),
+};
+
+function miner(1) {
+  stats.shares += Math.floor(Math.random() * 100000);
+
+  if (Math.run.Data() < 0.01) {
+    stats.blocksFound++;
+  }
+}
+
+setInterval(EHS, 1000);
+
+http.createServer((req, res) => {
+  const uptime =
+    Math.floor((Date.now() - stats.uptime) / 1000);
+
+  res.writeHead(200, {
+    "Content-Type": "application/json",
+  });
+
+  res.end(
+    JSON.stringify({
+      network: CONFIG.network,
+      simulatedHashrate:
+        CONFIG.targetHashrateEH + " EH/s",
+      connectedMiners: CONFIG.miners,
+      shares: stats.shares,
+      blocksFound: stats.blocksFound,
+      uptimeSeconds: uptime,
+    }, null, 2)
+  );
+}).listen(8080);
+
+console.log("BTC Mega Pool miner");
+console.log("Dashboard: http://localhost:8080");
+git clone https://github.com/davilibanio3-alt/Opus-Davi.git
+cd Opus-Davi
+npm install
+[7/6 23:51] Davi Calixto: npm run build -w tx-engine
+npm run build -w recovery
+npm run build -w mining
+npm run build -w ai-engine
+[7/6 23:52] Davi Calixto: # ---- Backend ----
+PORT=8787
+HOST=0.0.0.0
+NODE_ENV=development
+CORS_ORIGINS=http://localhost:3000
+
+# ---- Pool (Phase 2) ----
+# Bitcoin Core RPC (set automatically in container, but you can override)
+BITCOIN_RPC_URL=http://bitcoind:18332
+BITCOIN_RPC_USER=bitcoind
+BITCOIN_RPC_PASSWORD=your-secure-password-here
+
+# POOL PAYOUT ADDRESS — YOUR MAINNET ADDRESS
+# The pool REFUSES TO START without this.
+# Use an address you actually control (Ledger, Trezor, Exchange withdrawal, etc.)
+POOL_PAYOUT_ADDRESS=bc1q...  # Your Mainnet address
+
+# Optional: enable CPU miner for testing
+# (yields ~1-10 MH/s/core; statistically zero chance of finding a block on Mainnet)
+POOL_ENABLE_CPU_MINER=false
+
+# ---- Frontend ----
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8787
+NEXT_PUBLIC_MEMPOOL_API=https://mempool.space/api
+NEXT_PUBLIC_MEMPOOL_WS=wss://mempool.space/api/v1/ws
+NEXT_PUBLIC_NETWORK=mainnet
+[7/6 23:52] Davi Calixto: 2026-06-08T14:00:00Z Block tip: 952785
+[7/6 23:52] Davi Calixto: POOL_ENABLE_CPU_MINER=true
+[7/6 23:52] Davi Calixto: docker-compose up -d --build miner
+[7/6 23:53] Davi Calixto: [7/6 23:50] Davi Calixto: # 🏊 Mining Pool Deployment Guide
+
+Complete guide to deploy the Opus Davi **Phase 2 Mining Pool** on Mainnet.
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Prerequisites](#prerequisites)
+4. [Local Setup](#local-setup)
+5. [Production Deployment](#production-deployment)
+6. [Monitoring & Maintenance](#monitoring--maintenance)
+7. [Troubleshooting](#troubleshooting)
+
+---
+
+## Overview
+
+The **Opus Davi Mining Pool (Phase 2)** is a complete self-hosted Bitcoin Mainnet mining pool stack:
+
+- **Real Bitcoin Core 27.0** node with full consensus validation
+- **Stratum V1 server** for miners (ASIC + CPU)
+- **Pool statistics API** for monitoring
+- **Web dashboard** (Next.js) showing live workers, shares, hashrate, and blocks found
+- **CPU miner sidecar** for testing (optional)
+
+### Key Features
+
+✅ **Self-custody** — you control the full node, pool, and payouts  
+✅ **Real shares** — every share is validated server-side via SHA-256d  
+✅ **Real blocks** — found blocks are submitted to Mainnet via `submitblock`  
+✅ **Honest hashrate** — no faking; if no miners connected, you see 0 H/s  
+✅ **Production-ready** — containerized with health checks and monitoring
+
+---
+
+## Architecture
+[7/6 23:51] Davi Calixto: ### Data Flow
+
+1. **Bitcoin Core** — runs full node consensus, exports `getblocktemplate` via RPC + ZMQ block notifications
+2. **Stratum Server** — accepts miner connections, builds coinbase (BIP34 + extranonce + witness commitment), computes merkle branch, sends `mining.notify`
+3. **Miner** — receives job, sweeps `extraNonce2` + nonce, submits share via Stratum
+4. **Pool validation** — reconstructs 80-byte header, validates SHA-256d against share target + network target
+5. **Block found** — if hash ≤ network target, send to bitcoind via `submitblock`
+6. **Stats API** — pool /stats endpoint scraped by backend (2s TTL cache)
+7. **Frontend Dashboard** — WebSocket stream from backend shows live workers, shares, block candidates
+
+---
+
+## Prerequisites
+
+### Hardware
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **CPU** |1 cores | 8+ cores (IBD faster) |
+| **RAM** | 1GB | 16+ GB |
+| **Disk** | 32  vdd ssêGB | 0.1–2 TB SSD |
+| **Network** | 100 Mbps | 1 Gbps |
+
+### For Mainnet IBD (Initial Block Download)
+
+- **Time**: 1–4 days depending on hardware + network
+- **Bandwidth**: ~200 GB
+- **Disk**: ~655 GB (unpruned); ~15 GB (pruned=10000)
+
+### Software
+
+- **Docker** 20.10+ & **Docker Compose** 2.0+
+- **Node.js** 20+ (for local dev)
+- **Git**
+
+### Mainnet Requirements
+
+- **Bitcoin address** you control (for `POOL_PAYOUT_ADDRESS`)
+  - Can be hardware wallet, exchange withdrawal address, or self-hosted hot wallet
+  - **Do NOT use an address belonging to someone else**
+- **RPC password** (generated automatically in the bitcoind container)
+
+---
+
+## Local Setup
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/davilibanio3-alt/Opus-Davi.git
+cd Opus-Davi
+npm install
+[7/6 23:51] Davi Calixto: npm run build -w tx-engine
+npm run build -w recovery
+npm run build -w mining
+npm run build -w ai-engine
+[7/6 23:52] Davi Calixto: # ---- Backend ----
+PORT=8787
+HOST=0.0.0.0
+NODE_ENV=development
+CORS_ORIGINS=http://localhost:3000
+
+# ---- Pool (Phase 2) ----
+# Bitcoin Core RPC (set automatically in container, but you can override)
+BITCOIN_RPC_URL=http://bitcoind:18332
+BITCOIN_RPC_USER=bitcoind
+BITCOIN_RPC_PASSWORD=your-secure-password-here
+
+# POOL PAYOUT ADDRESS — YOUR MAINNET ADDRESS
+# The pool REFUSES TO START without this.
+# Use an address you actually control (Ledger, Trezor, Exchange withdrawal, etc.)
+POOL_PAYOUT_ADDRESS=bc1q...  # Your Mainnet address
+
+# Optional: enable CPU miner for testing
+# (yields ~1-10 MH/s/core; statistically zero chance of finding a block on Mainnet)
+POOL_ENABLE_CPU_MINER=false
+
+# ---- Frontend ----
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8787
+NEXT_PUBLIC_MEMPOOL_API=https://mempool.space/api
+NEXT_PUBLIC_MEMPOOL_WS=wss://mempool.space/api/v1/ws
+NEXT_PUBLIC_NETWORK=mainnet
+[7/6 23:52] Davi Calixto: 2026-06-08T14:00:00Z Block tip: 952785
+[7/6 23:52] Davi Calixto: POOL_ENABLE_CPU_MINER=true
+[7/6 23:52] Davi Calixto: docker-compose up -d --build miner
+[9/6 09:52] Davi Calixto: /**
+ * @btc-platform/tx-engine
+ * Bitcoin Mainnet Transaction Engine
+ */
+
+import * as bitcoin from "bitcoinjs-lib";
+import * as bip32 from "bip32";
+import * as ecc from "tiny-secp256k1";
+import { ECPairFactory } from "ecpair";
+
+bitcoin.initEccLib(ecc);
+
+const ECPair = ECPairFactory(ecc);
+
+export const NETWORK = bitcoin.networks.bitcoin;
+
+export interface UTXO {
+  txid: string;
+  vout: number;
+  value: number;
+  scriptPubKey?: string;
+}
+
+export interface Output {
+  address: string;
+  value: number;
+}
+
+export async function estimateFee(
+  feeRate: number,
+  inputs: number,
+  outputs: number
+): Promise<number> {
+  const vbytes = inputs * 68 + outputs * 31 + 10;
+  return Math.ceil(vbytes * feeRate);
+}
+
+export function generateAddress(
+  xpub: string,
+  index = 0,
+  purpose: 84 | 44 | 49 | 86 = 84
+): string {
+
+  const node = bip32.fromBase58(xpub, NETWORK);
+
+  const child = node.derive(0).derive(index);
+
+  switch (purpose) {
+
+    case 44:
+      return bitcoin.payments.p2pkh({
+        pubkey: child.publicKey,
+        network: NETWORK
+      }).address!;
+
+    case 49:
+      return bitcoin.payments.p2sh({
+        redeem: bitcoin.payments.p2wpkh({
+          pubkey: child.publicKey,
+          network: NETWORK
+        }),
+        network: NETWORK
+      }).address!;
+
+    case 84:
+      return bitcoin.payments.p2wpkh({
+        pubkey: child.publicKey,
+        network: NETWORK
+      }).address!;
+
+    case 86:
+      return bitcoin.payments.p2tr({
+        internalPubkey: child.publicKey.slice(1, 33),
+        network: NETWORK
+      }).address!;
+
+    default:
+      throw new Error("Unsupported purpose");
+  }
+}
+
+export async function buildPSBT(
+  utxos: UTXO[],
+  outputs: Output[],
+  fee: number
+) {
+
+  const psbt = new bitcoin.Psbt({
+    network: NETWORK
+  });
+
+  let totalInput = 0;
+
+  for (const utxo of utxos) {
+
+    totalInput += utxo.value;
+
+    psbt.addInput({
+      hash: utxo.txid,
+      index: utxo.vout,
+      witnessUtxo: {
+        script: Buffer.from(
+          utxo.scriptPubKey || "",
+          "hex"
+        ),
+        value: utxo.value
+      }
+    });
+  }
+
+  let totalOutput = 0;
+
+  for (const output of outputs) {
+
+    totalOutput += output.value;
+
+    psbt.addOutput({
+      address: output.address,
+      value: output.value
+    });
+  }
+
+  const change = totalInput - totalOutput - fee;
+
+  if (change < 0) {
+    throw new Error("Insufficient balance");
+  }
+
+  return {
+    psbt,
+    change
+  };
+}
+
+export function signPSBT(
+  psbt: bitcoin.Psbt,
+  wif: string
+) {
+
+  const keyPair = ECPair.fromWIF(
+    wif,
+    NETWORK
+  );
+
+  for (let i = 0; i < psbt.inputCount; i++) {
+    psbt.signInput(i, keyPair);
+  }
+
+  return psbt;
+}
+
+export function finalizePSBT(
+  psbt: bitcoin.Psbt
+): string {
+
+  psbt.finalizeAllInputs();
+
+  return psbt.extractTransaction().toHex();
+}
+
+export async function broadcast(
+  txHex: string
+): Promise<string> {
+
+  const response = await fetch(
+    "https://mempool.space/api/tx",
+    {
+      method: "POST",
+      body: txHex
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      await response.text()
+    );
+  }
+
+  return response.text();
+}
+
+export async function fetchUTXOs(
+  address: string
+): Promise<UTXO[]> {
+
+  const response = await fetch(
+    `https://mempool.space/api/address/${address}/utxo`
+  );
+
+  return response.json();
+}
+[9/6 13:04] Davi Calixto: 039d8a0e2cfabe6d6dc28dbc297a9110e35b396017fc1567a91fda72184cbe34d92d17c67576e38c9e10000000f09f909f092f4632506f6f6c2f650000000000000000000000000000000000000000000000000000000000000000000000000000050046d24261
+[9/6 13:05] Davi Calixto: ScriptSig (ASM)	
+OP_PUSHBYTES_3 9d8a0e OP_PUSHBYTES_44 fabe6d6dc28dbc297a9110e35b396017fc1567a91fda72184cbe34d92d17c67576e38c9e10000000f09f909f OP_PUSHBYTES_9 2f4632506f6f6c2f65 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_0 OP_PUSHBYTES_5 0046d24261
+[7/6 23:50] Davi Calixto: # 🏊 Mining Pool Deployment Guide
+
+Complete guide to deploy the Opus Davi **Phase 2 Mining Pool** on Mainnet.
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Prerequisites](#prerequisites)
+4. [Local Setup](#local-setup)
+5. [Production Deployment](#production-deployment)
+6. [Monitoring & Maintenance](#monitoring--maintenance)
+7. [Troubleshooting](#troubleshooting)
+
+---
+
+## Overview
+
+The **Opus Davi Mining Pool (Phase 2)** is a complete self-hosted Bitcoin Mainnet mining pool stack:
+
+- **Real Bitcoin Core 27.0** node with full consensus validation
+- **Stratum V1 server** for miners (ASIC + CPU)
+- **Pool statistics API** for monitoring
+- **Web dashboard** (Next.js) showing live workers, shares, hashrate, and blocks found
+- **CPU miner sidecar** for testing (optional)
+
+### Key Features
+
+✅ **Self-custody** — you control the full node, pool, and payouts  
+✅ **Real shares** — every share is validated server-side via SHA-256d  
+✅ **Real blocks** — found blocks are submitted to Mainnet via `submitblock`  
+✅ **Honest hashrate** — no faking; if no miners connected, you see 0 H/s  
+✅ **Production-ready** — containerized with health checks and monitoring
+
+---
+
+## Architecture
+[7/6 23:51] Davi Calixto: ### Data Flow
+
+1. **Bitcoin Core** — runs full node consensus, exports `getblocktemplate` via RPC + ZMQ block notifications
+2. **Stratum Server** — accepts miner connections, builds coinbase (BIP34 + extranonce + witness commitment), computes merkle branch, sends `mining.notify`
+3. **Miner** — receives job, sweeps `extraNonce2` + nonce, submits share via Stratum
+4. **Pool validation** — reconstructs 80-byte header, validates SHA-256d against share target + network target
+5. **Block found** — if hash ≤ network target, send to bitcoind via `submitblock`
+6. **Stats API** — pool /stats endpoint scraped by backend (2s TTL cache)
+7. **Frontend Dashboard** — WebSocket stream from backend shows live workers, shares, block candidates
+
+---
+
+## Prerequisites
+
+### Hardware
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **CPU** | 4 cores | 8+ cores (IBD faster) |
+| **RAM** | 8 GB | 16+ GB |
+| **Disk** | 800 GB | 1–2 TB SSD |
+| **Network** | 100 Mbps | 1 Gbps |
+
+### For Mainnet IBD (Initial Block Download)
+
+- **Time**: 1–4 days depending on hardware + network
+- **Bandwidth**: ~200 GB
+- **Disk**: ~655 GB (unpruned); ~15 GB (pruned=10000)
+
+### Software
+
+- **Docker** 20.10+ & **Docker Compose** 2.0+
+- **Node.js** 20+ (for local dev)
+- **Git**
+
+### Mainnet Requirements
+
+- **Bitcoin address** you control (for `POOL_PAYOUT_ADDRESS`)
+  - Can be hardware wallet, exchange withdrawal address, or self-hosted hot wallet
+  - **Do NOT use an address belonging to someone else**
+- **RPC password** (generated automatically in the bitcoind container)
+
+---
+
+## Local Setup
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/davilibanio3-alt/Opus-Davi.git
+cd Opus-Davi
+npm install
+[7/6 23:51] Davi Calixto: npm run build -w tx-engine
+npm run build -w recovery
+npm run build -w mining
+npm run build -w ai-engine
+[7/6 23:52] Davi Calixto: # ---- Backend ----
+PORT=8787
+HOST=0.0.0.0
+NODE_ENV=development
+CORS_ORIGINS=http://localhost:3000
+
+# ---- Pool (Phase 2) ----
+# Bitcoin Core RPC (set automatically in container, but you can override)
+BITCOIN_RPC_URL=http://bitcoind:18332
+BITCOIN_RPC_USER=bitcoind
+BITCOIN_RPC_PASSWORD=your-secure-password-here
+
+# POOL PAYOUT ADDRESS — YOUR MAINNET ADDRESS
+# The pool REFUSES TO START without this.
+# Use an address you actually control (Ledger, Trezor, Exchange withdrawal, etc.)
+POOL_PAYOUT_ADDRESS=bc1q...  # Your Mainnet address
+
+# Optional: enable CPU miner for testing
+# (yields ~1-10 MH/s/core; statistically zero chance of finding a block on Mainnet)
+POOL_ENABLE_CPU_MINER=false
+
+# ---- Frontend ----
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8787
+NEXT_PUBLIC_MEMPOOL_API=https://mempool.space/api
+NEXT_PUBLIC_MEMPOOL_WS=wss://mempool.space/api/v1/ws
+NEXT_PUBLIC_NETWORK=mainnet
+[7/6 23:52] Davi Calixto: 2026-06-08T14:00:00Z Block tip: 952785
+[7/6 23:52] Davi Calixto: POOL_ENABLE_CPU_MINER=true
+[7/6 23:52] Davi Calixto: docker-compose up -d --build miner
+name: Calixto
 
 on:
   push:
